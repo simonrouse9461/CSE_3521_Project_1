@@ -4,6 +4,7 @@ class Puzzle:
     down = 3
     left = -1
     right = 1
+    actions = (up, down, left, right)
 
     def __init__(self, *args):
         if len(args) != 9:
@@ -43,61 +44,32 @@ class Puzzle:
         return index // 3, index % 3
 
     def can_move(self, orientation):
-        pass
+        if orientation == Puzzle.up:
+            return self.position(0)[0] > 0
+        if orientation == Puzzle.down:
+            return self.position(0)[0] < 2
+        if orientation == Puzzle.left:
+            return self.position(0)[1] > 0
+        if orientation == Puzzle.right:
+            return self.position(0)[1] < 2
+
+    def move(self, orientation):
+        if self.can_move(orientation):
+            pos = self.__list.index(0)
+            new_pos = pos + orientation
+            self.__swap(pos, new_pos)
+            self.history.append(orientation)
+
+    @property
+    def copy(self):
+        copy = Puzzle(self.__list)
+        copy.history = self.history
+        return copy
 
     @property
     def step(self):
         return len(self.history)
 
-    @property
-    def can_move_up(self):
-        return self.position(0)[0] > 0
-
-    @property
-    def can_move_down(self):
-        return self.position(0)[0] < 2
-
-    @property
-    def can_move_left(self):
-        return self.position(0)[1] > 0
-
-    @property
-    def can_move_right(self):
-        return self.position(0)[1] < 2
-
-    def move_up(self):
-        if self.can_move_up:
-            pos = self.__list.index(0)
-            new_pos = pos + Puzzle.up
-            self.__swap(pos, new_pos)
-            self.history.append(Puzzle.up)
-
-    def move_down(self):
-        if self.can_move_down:
-            pos = self.__list.index(0)
-            new_pos = pos + Puzzle.down
-            self.__swap(pos, new_pos)
-            self.history.append(Puzzle.down)
-
-    def move_left(self):
-        if self.can_move_left:
-            pos = self.__list.index(0)
-            new_pos = pos + Puzzle.left
-            self.__swap(pos, new_pos)
-            self.history.append(Puzzle.left)
-
-    def move_right(self):
-        if self.can_move_right:
-            pos = self.__list.index(0)
-            new_pos = pos + Puzzle.right
-            self.__swap(pos, new_pos)
-            self.history.append(Puzzle.right)
-
-    def go_back(self):
-        if len(self.history) != 0:
-            pos = self.__list.index(0)
-            new_pos = pos - self.history.pop(-1)
-            self.__swap(pos, new_pos)
 
     def heuristic(self, goal):
         dist = 0
@@ -108,9 +80,8 @@ class Puzzle:
 
 
 p = Puzzle(0, 1, 2, 3, 4, 5, 6, 7, 8)
-p.move_down()
-p.move_right()
-p.go_back()
+p.move(Puzzle.down)
+p.move(Puzzle.right)
 print(p)
 print("heuristic: ", p.heuristic(Puzzle(0, 1, 2, 3, 4, 5, 6, 7, 8)))
 print("history: ", p.history)
