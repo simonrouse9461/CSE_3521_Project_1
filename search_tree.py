@@ -1,3 +1,3 @@
-class Node:
+class SearchTree:
 
     def __init__(self):
