@@ -262,5 +262,6 @@ class TreeSearch:
         print('No solution found within depth {}. Search failure!'.format(TreeSearch.IDDFS_threshold))
         return TreeSearch.Cutoff(TreeSearch.IDDFS_threshold)
 
-    def a_star_search(self):
+    def __iterative_search(self, strategy):
         pass
+
