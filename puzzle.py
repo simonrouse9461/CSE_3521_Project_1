@@ -1,14 +1,34 @@
 class Puzzle:
 
-    Up = -1, 0
-    Down = 1, 0
-    Left = 0, -1
-    Right = 0, 1
-    Actions = (Up, Down, Left, Right)
+    class Action:
 
-    @staticmethod
-    def raw(move):
-        return move[0]*3 + move[1]
+        def __init__(self, row, col):
+            self.row = row
+            self.col = col
+
+        def __repr__(self):
+            if self.value == (-1, 0):
+                return 'Up'
+            if self.value == (1, 0):
+                return 'Down'
+            if self.value == (0, -1):
+                return 'Left'
+            if self.value == (0, 1):
+                return 'Right'
+
+        @property
+        def value(self):
+            return self.row, self.col
+
+        @property
+        def raw(self):
+            return self.row * 3 + self.col
+
+    up = Action(-1, 0)
+    down = Action(1, 0)
+    left = Action(0, -1)
+    right = Action(0, 1)
+    actions = (up, down, left, right)
 
     def __init__(self, *args):
         if len(args) != 9:
@@ -57,23 +77,23 @@ class Puzzle:
         index = self.__list.index(num)
         return index // 3, index % 3
 
-    def can_move(self, orientation):
-        return self.position(0)[0] + orientation[0] in range(0, 3) and \
-            self.position(0)[1] + orientation[1] in range(0, 3)
+    def can_move(self, action):
+        return self.position(0)[0] + action.row in range(0, 3) and \
+            self.position(0)[1] + action.col in range(0, 3)
 
-    def move(self, *movements):
-        for move in movements:
-            if self.can_move(move):
+    def move(self, *actions):
+        for action in actions:
+            if self.can_move(action):
                 pos = self.__list.index(0)
-                new_pos = pos + Puzzle.raw(move)
+                new_pos = pos + action.raw
                 self.__swap(pos, new_pos)
-                self.history.append(move)
+                self.history.append(action)
 
     def undo(self, steps):
         if steps == 0:
             return
         pos = self.__list.index(0)
-        old_pos = pos - Puzzle.raw(self.history.pop(-1))
+        old_pos = pos - self.history.pop(-1).raw
         self.__swap(pos, old_pos)
         self.undo(steps - 1)
 
@@ -85,9 +105,56 @@ class Puzzle:
         return dist
 
 
+class Problem:
+
+    # initial_state: Puzzle
+    # goal_state: Puzzle
+    def __init__(self, initial_state, goal_state):
+        self.initial_state = initial_state
+        self.goal_state = goal_state
+
+    # state: Puzzle
+    @classmethod
+    def actions(cls, state):
+        action_set = set()
+        for action in Puzzle.actions:
+            if state.can_move(action):
+                action_set.add(action)
+        return action_set
+
+    # state: Puzzle
+    # action: Puzzle.Action
+    @classmethod
+    def transition(cls, state, action):
+        copy = state.copy
+        copy.move(action)
+        return copy
+
+    # state: Puzzle
+    def goal_test(self, state):
+        return state == self.goal_state
+
+
+class Node:
+
+    # problem: Problem
+    # parent: Node
+    # action: Puzzle.Action
+    def __init__(self, problem, parent, action):
+        self.state = problem.transition(parent.state, action)
+        self.parent = parent
+
+    @property
+    def action(self):
+        return self.state.history
+
+    @property
+    def cost(self):
+        return len(self.action)
+
+
 p = Puzzle(0, 1, 2, 3, 4, 5, 6, 7, 8)
-p.move(Puzzle.Down, Puzzle.Right, Puzzle.Down, Puzzle.Right, Puzzle.Up,
-       Puzzle.Down, Puzzle.Right, Puzzle.Down, Puzzle.Right, Puzzle.Up)
+p.move(Puzzle.down, Puzzle.right, Puzzle.down, Puzzle.right, Puzzle.up)
 print(p)
 print("heuristic: ", p.heuristic(Puzzle(8, 7, 6, 5, 4, 3, 2, 1, 0)))
 print("history: ", p.history)
