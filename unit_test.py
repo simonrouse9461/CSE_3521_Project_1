@@ -1,19 +1,18 @@
 from puzzle import *
 
 
-p = Puzzle(0, 1, 2, 3, 4, 5, 6, 7, 8)
-q = Puzzle(0, 1, 2, 3, 4, 5, 6, 7, 8)
+goal = Puzzle(0, 1, 2, 3, 4, 5, 6, 7, 8)
+init = goal.copy
+init.shuffle(10)
 
-#prob = Problem(p, q)
-#r = prob.result(p, Puzzle.down)
-#print(r)
+print('Initial state:', init)
+print('Goal state:', goal)
+print('Heuristic:', init.heuristic(goal))
+print()
 
-
-q.move(Puzzle.down, Puzzle.right)
-print(p)
-print(q)
-
-prob = Problem(p, q)
+prob = Problem(initial_state=init, goal_state=goal)
 search = TreeSearch(prob)
-result = search.depth_limited_search(2)
-print(result)
+result = search.iterative_deepening_search()
+print()
+
+print('Result:', result)

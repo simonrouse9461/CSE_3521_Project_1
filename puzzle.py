@@ -1,3 +1,6 @@
+import random
+
+
 class Puzzle:
 
     class Action:
@@ -28,7 +31,7 @@ class Puzzle:
     down = Action(1, 0)
     left = Action(0, -1)
     right = Action(0, 1)
-    actions = (up, down, left, right)
+    action_set = {up, down, left, right}
 
     def __init__(self, *args):
         if len(args) != 9:
@@ -64,12 +67,32 @@ class Puzzle:
     @property
     def copy(self):
         copy = Puzzle(*self.__list)
-        copy.history = self.history.copy()
+        copy.history = [*self.history]
         return copy
+
+    @property
+    def clear_copy(self):
+        return Puzzle(*self.__list)
 
     @property
     def step(self):
         return len(self.history)
+
+    @property
+    def actions(self):
+        actions = set()
+        for action in Puzzle.action_set:
+            if self.can_move(action):
+                actions.add(action)
+        return actions
+
+    @staticmethod
+    def random_puzzle():
+        raw_list = [x for x in range(9)]
+        random_list = []
+        while len(raw_list) > 0:
+            random_list.append(raw_list.pop(random.randint(0, len(raw_list) - 1)))
+        return Puzzle(*random_list)
 
     def position(self, num):
         if not 0 <= num < 9:
@@ -88,6 +111,11 @@ class Puzzle:
                 new_pos = pos + action.raw
                 self.__swap(pos, new_pos)
                 self.history.append(action)
+
+    def shuffle(self, times):
+        for _ in range(times):
+            actions = [*self.actions]
+            self.move(actions[random.randint(0, len(actions) - 1)])
 
     def undo(self, steps):
         if steps == 0:
@@ -110,17 +138,13 @@ class Problem:
     # initial_state: Puzzle
     # goal_state: Puzzle
     def __init__(self, initial_state, goal_state):
-        self.initial_state = initial_state
-        self.goal_state = goal_state
+        self.initial_state = initial_state.clear_copy
+        self.goal_state = goal_state.clear_copy
 
     # state: Puzzle
     @classmethod
     def actions(cls, state):
-        action_set = set()
-        for action in Puzzle.actions:
-            if state.can_move(action):
-                action_set.add(action)
-        return action_set
+        return state.actions
 
     # state: Puzzle
     # action: Puzzle.Action
@@ -177,32 +201,66 @@ class LIFOQueue:
 class TreeSearch:
 
     class Failure:
-        pass
+
+        def __init__(self, message='Unknown Error'):
+            self.message = message
+
+        def __repr__(self):
+            return '<Failure>'
+
+        def __str__(self):
+            return '<Tree Search Failure: {}>'.format(self.message)
 
     class Cutoff:
-        pass
+
+        def __init__(self, depth=None):
+            self.depth = depth
+
+        def __repr__(self):
+            return '<Cutoff>'
+
+        def __str__(self):
+            return '<Tree Search Cutoff: Depth {}>'.format(self.depth)
+
+    IDDFS_threshold = 13
 
     def __init__(self, problem):
         self.problem = problem
 
-    def depth_limited_search(self, limit):
-        return self.__recursive_search(Node(self.problem), limit)
-
+    # private member
     def __recursive_search(self, node, limit):
         if self.problem.goal_test(node.state):
             return node.solution
         elif limit == 0:
-            return TreeSearch.Cutoff
+            return TreeSearch.Cutoff(limit)
         else:
             cutoff_occurred = False
             for action in self.problem.actions(node.state):
                 child = Node(self.problem, node, action)
                 result = self.__recursive_search(child, limit - 1)
-                if result == TreeSearch.Cutoff:
+                if type(result) is TreeSearch.Cutoff:
                     cutoff_occurred = True
-                elif result != TreeSearch.Failure:
+                elif type(result) is not TreeSearch.Failure:
                     return result
             if cutoff_occurred:
-                return TreeSearch.Cutoff
+                return TreeSearch.Cutoff(limit)
             else:
-                return TreeSearch.Failure
+                return TreeSearch.Failure()
+
+    def depth_limited_search(self, limit):
+        return self.__recursive_search(Node(self.problem), limit)
+
+    def iterative_deepening_search(self):
+        for depth in range(TreeSearch.IDDFS_threshold + 1):
+            print('Depth {}: '.format(depth), end='')
+            result = self.depth_limited_search(depth)
+            if type(result) is not TreeSearch.Cutoff:
+                print('Solution found!')
+                return result
+            else:
+                print('Not found...')
+        print('No solution found within depth {}. Search failure!'.format(TreeSearch.IDDFS_threshold))
+        return TreeSearch.Cutoff(TreeSearch.IDDFS_threshold)
+
+    def a_star_search(self):
+        pass
