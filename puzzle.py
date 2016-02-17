@@ -64,7 +64,7 @@ class Puzzle:
     @property
     def copy(self):
         copy = Puzzle(*self.__list)
-        copy.history = self.history
+        copy.history = self.history.copy()
         return copy
 
     @property
@@ -174,7 +174,7 @@ class LIFOQueue:
         self.__list.pop(0)
 
 
-class DLSTreeSearch:
+class TreeSearch:
 
     class Failure:
         pass
@@ -185,35 +185,24 @@ class DLSTreeSearch:
     def __init__(self, problem):
         self.problem = problem
 
-    def search(self, limit):
-        return self.recursive_search(Node(self.problem), limit)
+    def depth_limited_search(self, limit):
+        return self.__recursive_search(Node(self.problem), limit)
 
-    def recursive_search(self, node, limit):
+    def __recursive_search(self, node, limit):
         if self.problem.goal_test(node.state):
             return node.solution
         elif limit == 0:
-            return DLSTreeSearch.Cutoff
+            return TreeSearch.Cutoff
         else:
             cutoff_occurred = False
             for action in self.problem.actions(node.state):
                 child = Node(self.problem, node, action)
-                result = self.recursive_search(child, limit - 1)
-                if result == DLSTreeSearch.Cutoff:
+                result = self.__recursive_search(child, limit - 1)
+                if result == TreeSearch.Cutoff:
                     cutoff_occurred = True
-                elif result != DLSTreeSearch.Failure:
+                elif result != TreeSearch.Failure:
                     return result
             if cutoff_occurred:
-                return DLSTreeSearch.Cutoff
+                return TreeSearch.Cutoff
             else:
-                return DLSTreeSearch.Failure
-
-p = Puzzle(0, 1, 2, 3, 4, 5, 6, 7, 8)
-p.move(Puzzle.down, Puzzle.right, Puzzle.down, Puzzle.right, Puzzle.up)
-print(p)
-q = Puzzle(0, 1, 2, 3, 4, 5, 6, 7, 8)
-print(q)
-
-prob = Problem(p, q)
-search = DLSTreeSearch(prob)
-result = search.search(10)
-print(result)
+                return TreeSearch.Failure
