@@ -125,7 +125,7 @@ class Problem:
     # state: Puzzle
     # action: Puzzle.Action
     @classmethod
-    def transition(cls, state, action):
+    def result(cls, state, action):
         copy = state.copy
         copy.move(action)
         return copy
@@ -140,24 +140,80 @@ class Node:
     # problem: Problem
     # parent: Node
     # action: Puzzle.Action
-    def __init__(self, problem, parent, action):
-        self.state = problem.transition(parent.state, action)
+    def __init__(self, problem, parent=None, action=None):
+        self.state = problem.initial_state if parent is None else problem.result(parent.state, action)
         self.parent = parent
 
     @property
     def action(self):
-        return self.state.history
+        return self.solution[-1]
 
     @property
     def cost(self):
-        return len(self.action)
+        return len(self.solution)
 
+    @property
+    def solution(self):
+        return self.state.history
+
+
+class LIFOQueue:
+
+    def __init__(self):
+        self.__list = []
+
+    @property
+    def empty(self):
+        return len(self.__list) == 0
+
+    # item: Node
+    def insert(self, item):
+        self.__list.insert(0, item)
+
+    def pop(self):
+        self.__list.pop(0)
+
+
+class DLSTreeSearch:
+
+    class Failure:
+        pass
+
+    class Cutoff:
+        pass
+
+    def __init__(self, problem):
+        self.problem = problem
+
+    def search(self, limit):
+        return self.recursive_search(Node(self.problem), limit)
+
+    def recursive_search(self, node, limit):
+        if self.problem.goal_test(node.state):
+            return node.solution
+        elif limit == 0:
+            return DLSTreeSearch.Cutoff
+        else:
+            cutoff_occurred = False
+            for action in self.problem.actions(node.state):
+                child = Node(self.problem, node, action)
+                result = self.recursive_search(child, limit - 1)
+                if result == DLSTreeSearch.Cutoff:
+                    cutoff_occurred = True
+                elif result != DLSTreeSearch.Failure:
+                    return result
+            if cutoff_occurred:
+                return DLSTreeSearch.Cutoff
+            else:
+                return DLSTreeSearch.Failure
 
 p = Puzzle(0, 1, 2, 3, 4, 5, 6, 7, 8)
 p.move(Puzzle.down, Puzzle.right, Puzzle.down, Puzzle.right, Puzzle.up)
 print(p)
-print("heuristic: ", p.heuristic(Puzzle(8, 7, 6, 5, 4, 3, 2, 1, 0)))
-print("history: ", p.history)
-q = p.copy
-q.undo(5)
+q = Puzzle(0, 1, 2, 3, 4, 5, 6, 7, 8)
 print(q)
+
+prob = Problem(p, q)
+search = DLSTreeSearch(prob)
+result = search.search(10)
+print(result)
