@@ -1,10 +1,14 @@
 class Puzzle:
 
-    up = -3
-    down = 3
-    left = -1
-    right = 1
-    actions = (up, down, left, right)
+    Up = -1, 0
+    Down = 1, 0
+    Left = 0, -1
+    Right = 0, 1
+    Actions = (Up, Down, Left, Right)
+
+    @staticmethod
+    def raw(move):
+        return move[0]*3 + move[1]
 
     def __init__(self, *args):
         if len(args) != 9:
@@ -22,7 +26,7 @@ class Puzzle:
 
     def __str__(self):
         format_str = '\n+---+---+---+\n| {} | {} | {} |' * 3 + '\n+---+---+---+\n'
-        return format_str.format(*self.__tuple)
+        return format_str.format(*self.tuple)
 
     def __eq__(self, other):
         return self.__list == other.__list
@@ -31,11 +35,21 @@ class Puzzle:
         self.__list[i], self.__list[j] = self.__list[j], self.__list[i]
 
     @property
-    def __tuple(self):
+    def tuple(self):
         temp_list = [0] * 9
         for i, num in enumerate(self.__list):
             temp_list[i] = num if num != 0 else ' '
         return tuple(temp_list)
+
+    @property
+    def copy(self):
+        copy = Puzzle(*self.__list)
+        copy.history = self.history
+        return copy
+
+    @property
+    def step(self):
+        return len(self.history)
 
     def position(self, num):
         if not 0 <= num < 9:
@@ -44,32 +58,24 @@ class Puzzle:
         return index // 3, index % 3
 
     def can_move(self, orientation):
-        if orientation == Puzzle.up:
-            return self.position(0)[0] > 0
-        if orientation == Puzzle.down:
-            return self.position(0)[0] < 2
-        if orientation == Puzzle.left:
-            return self.position(0)[1] > 0
-        if orientation == Puzzle.right:
-            return self.position(0)[1] < 2
+        return self.position(0)[0] + orientation[0] in range(0, 3) and \
+            self.position(0)[1] + orientation[1] in range(0, 3)
 
-    def move(self, orientation):
-        if self.can_move(orientation):
-            pos = self.__list.index(0)
-            new_pos = pos + orientation
-            self.__swap(pos, new_pos)
-            self.history.append(orientation)
+    def move(self, *movements):
+        for move in movements:
+            if self.can_move(move):
+                pos = self.__list.index(0)
+                new_pos = pos + Puzzle.raw(move)
+                self.__swap(pos, new_pos)
+                self.history.append(move)
 
-    @property
-    def copy(self):
-        copy = Puzzle(self.__list)
-        copy.history = self.history
-        return copy
-
-    @property
-    def step(self):
-        return len(self.history)
-
+    def undo(self, steps):
+        if steps == 0:
+            return
+        pos = self.__list.index(0)
+        old_pos = pos - Puzzle.raw(self.history.pop(-1))
+        self.__swap(pos, old_pos)
+        self.undo(steps - 1)
 
     def heuristic(self, goal):
         dist = 0
@@ -80,8 +86,11 @@ class Puzzle:
 
 
 p = Puzzle(0, 1, 2, 3, 4, 5, 6, 7, 8)
-p.move(Puzzle.down)
-p.move(Puzzle.right)
+p.move(Puzzle.Down, Puzzle.Right, Puzzle.Down, Puzzle.Right, Puzzle.Up,
+       Puzzle.Down, Puzzle.Right, Puzzle.Down, Puzzle.Right, Puzzle.Up)
 print(p)
-print("heuristic: ", p.heuristic(Puzzle(0, 1, 2, 3, 4, 5, 6, 7, 8)))
+print("heuristic: ", p.heuristic(Puzzle(8, 7, 6, 5, 4, 3, 2, 1, 0)))
 print("history: ", p.history)
+q = p.copy
+q.undo(5)
+print(q)

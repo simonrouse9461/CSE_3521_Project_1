@@ -5,7 +5,7 @@ from search_tree import SearchTree
 def Recursive_DLS(node,search_tree,limit):
     if node.state==search_tree.goal:
         return SearchTree.history
-    else if limit == 0:
+    elif limit == 0:
         return SearchTree.cutoff
     else:
         cutoff_occurred=False
@@ -15,9 +15,9 @@ def Recursive_DLS(node,search_tree,limit):
                 child_state.move(action)
                 child_node = search_tree.__make_node(child_state, frontier, action, frontier.depth + 1)
                 search_tree.add_frontier(child_node)
-                if result==cutoff:
+                if result == cutoff:
                     cutoff_occurred=True
-                else if result != failure:
+                elif result != failure:
                     return result
         if cutoff_occurred:
             return cutoff
