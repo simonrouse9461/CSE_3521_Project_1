@@ -159,7 +159,7 @@ class SearchAgent:
             if frontier.empty:
                 return SearchAgent.Failure('Solution do not exist!')
             node = frontier.pop()
-            print('frontier: {:<10} explored: {:<10} cost: {:<5} heuristic: {:<5} evaluation: {:<5}'
+            print('frontier: {:<6} explored: {:<6} cost: {:<6} heuristic: {:<6} evaluation: {}'
                   .format(len(frontier), len(explored), node.cost, node.heuristic, node.cost + node.heuristic))
             if self.problem.goal_test(node.state):
                 return node.solution
