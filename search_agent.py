@@ -37,6 +37,9 @@ class SearchAgent:
         def __lshift__(self, other):
             self.__list.insert(0, other)
 
+        def __len__(self):
+            return len(self.__list)
+
         @classmethod
         def compare(cls, item1, item2):
             raise NotImplementedError
@@ -75,6 +78,9 @@ class SearchAgent:
 
         def __lshift__(self, other):
             self.__set.add(other)
+
+        def __len__(self):
+            return len(self.__set)
 
     class Node:
 
@@ -153,6 +159,8 @@ class SearchAgent:
             if frontier.empty:
                 return SearchAgent.Failure('Solution do not exist!')
             node = frontier.pop()
+            print('frontier: {:<10} explored: {:<10} cost: {:<5} heuristic: {:<5} evaluation: {:<5}'
+                  .format(len(frontier), len(explored), node.cost, node.heuristic, node.cost + node.heuristic))
             if self.problem.goal_test(node.state):
                 return node.solution
             explored << node

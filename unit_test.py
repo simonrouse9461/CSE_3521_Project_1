@@ -11,6 +11,8 @@ def generate_test_problem(goal, problem):
         return Puzzle.random_puzzle()
     elif problem == 'project':
         return Puzzle(5, 0, 4, 2, 1, 3, 6, 7, 8)
+    elif problem == 'unsolvable':
+        return Puzzle(7, 8, 1, 3, 4, 0, 2, 6, 5)
     else:
         return goal
 
