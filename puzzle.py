@@ -160,6 +160,7 @@ class PuzzleProblem(ProblemFormulation):
         copy.move(action)
         return copy
 
+    # state: Puzzle
     def heuristic(self, state):
         return state.dist(self.goal_state)
 

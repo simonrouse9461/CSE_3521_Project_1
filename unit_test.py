@@ -2,9 +2,20 @@ from puzzle import *
 from search_agent import SearchAgent
 
 
+def generate_test_problem(goal, problem):
+    if problem == 'easy random':
+        state = goal.copy
+        state.shuffle(15)
+        return state
+    elif problem == 'hard random':
+        return Puzzle.random_puzzle()
+    elif problem == 'project':
+        return Puzzle(5, 0, 4, 2, 1, 3, 6, 7, 8)
+    else:
+        return goal
+
 goal = Puzzle(0, 1, 2, 3, 4, 5, 6, 7, 8)
-init = goal.copy
-init.shuffle(15)
+init = generate_test_problem(goal, 'hard random')
 
 print('Initial state:', init)
 print('Goal state:', goal)

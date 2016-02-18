@@ -12,12 +12,16 @@ class ProblemFormulation:
     def result(cls, state, action):
         raise NotImplementedError
 
+    def heuristic(self, state):
+        raise NotImplementedError
+
     def goal_test(self, state):
         raise NotImplementedError
 
 
 class SearchAgent:
 
+    # abstract class
     class PriorityQueue:
 
         def __init__(self, *args):
@@ -121,7 +125,7 @@ class SearchAgent:
         self.problem = problem
 
     # private member
-    def __recursive_search(self, node, limit):
+    def __recursive_tree_search(self, node, limit):
         if self.problem.goal_test(node.state):
             return node.solution
         elif limit == 0:
@@ -130,7 +134,7 @@ class SearchAgent:
             cutoff_occurred = False
             for action in self.problem.actions(node.state):
                 child = SearchAgent.Node(self.problem, node, action)
-                result = self.__recursive_search(child, limit - 1)
+                result = self.__recursive_tree_search(child, limit - 1)
                 if type(result) is SearchAgent.Cutoff:
                     cutoff_occurred = True
                 elif type(result) is not SearchAgent.Failure:
@@ -141,7 +145,7 @@ class SearchAgent:
                 return SearchAgent.Failure()
 
     # private member
-    def __iterative_search(self, queue_type):
+    def __iterative_graph_search(self, queue_type):
         node = SearchAgent.Node(self.problem)
         frontier = queue_type(node)
         explored = SearchAgent.ExploredSet()
@@ -160,7 +164,7 @@ class SearchAgent:
                     frontier.try_replace(child)
 
     def depth_limited_search(self, limit):
-        return self.__recursive_search(SearchAgent.Node(self.problem), limit)
+        return self.__recursive_tree_search(SearchAgent.Node(self.problem), limit)
 
     def iterative_deepening_search(self):
         for depth in range(SearchAgent.IDDFS_threshold + 1):
@@ -179,4 +183,4 @@ class SearchAgent:
             @classmethod
             def compare(cls, item1, item2):
                 return item1 if item1.cost + item1.heuristic < item2.cost + item2.heuristic else item2
-        return self.__iterative_search(AStarPriorityQueue)
+        return self.__iterative_graph_search(AStarPriorityQueue)
