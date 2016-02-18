@@ -1,4 +1,5 @@
 import random
+from search_agent import ProblemFormulation
 
 
 class Puzzle:
@@ -26,6 +27,10 @@ class Puzzle:
         @property
         def raw(self):
             return self.row * 3 + self.col
+
+        @property
+        def cost(self):
+            return 1
 
     up = Action(-1, 0)
     down = Action(1, 0)
@@ -71,7 +76,7 @@ class Puzzle:
         return copy
 
     @property
-    def clear_copy(self):
+    def clean_copy(self):
         return Puzzle(*self.__list)
 
     @property
@@ -125,7 +130,7 @@ class Puzzle:
         self.__swap(pos, old_pos)
         self.undo(steps - 1)
 
-    def heuristic(self, goal):
+    def dist(self, goal):
         dist = 0
         for i in range(1, 9):
             dist += abs(self.position(i)[0] - goal.position(i)[0])
@@ -133,13 +138,14 @@ class Puzzle:
         return dist
 
 
-class Problem:
+class PuzzleProblem(ProblemFormulation):
 
     # initial_state: Puzzle
     # goal_state: Puzzle
     def __init__(self, initial_state, goal_state):
-        self.initial_state = initial_state.clear_copy
-        self.goal_state = goal_state.clear_copy
+        super(PuzzleProblem, self).__init__(initial_state, goal_state)
+        self.initial_state = initial_state.clean_copy
+        self.goal_state = goal_state.clean_copy
 
     # state: Puzzle
     @classmethod
@@ -154,114 +160,9 @@ class Problem:
         copy.move(action)
         return copy
 
+    def heuristic(self, state):
+        return state.dist(self.goal_state)
+
     # state: Puzzle
     def goal_test(self, state):
         return state == self.goal_state
-
-
-class Node:
-
-    # problem: Problem
-    # parent: Node
-    # action: Puzzle.Action
-    def __init__(self, problem, parent=None, action=None):
-        self.state = problem.initial_state if parent is None else problem.result(parent.state, action)
-        self.parent = parent
-
-    @property
-    def action(self):
-        return self.solution[-1]
-
-    @property
-    def cost(self):
-        return len(self.solution)
-
-    @property
-    def solution(self):
-        return self.state.history
-
-
-class LIFOQueue:
-
-    def __init__(self):
-        self.__list = []
-
-    @property
-    def empty(self):
-        return len(self.__list) == 0
-
-    # item: Node
-    def insert(self, item):
-        self.__list.insert(0, item)
-
-    def pop(self):
-        self.__list.pop(0)
-
-
-class TreeSearch:
-
-    class Failure:
-
-        def __init__(self, message='Unknown Error'):
-            self.message = message
-
-        def __repr__(self):
-            return '<Failure>'
-
-        def __str__(self):
-            return '<Tree Search Failure: {}>'.format(self.message)
-
-    class Cutoff:
-
-        def __init__(self, depth=None):
-            self.depth = depth
-
-        def __repr__(self):
-            return '<Cutoff>'
-
-        def __str__(self):
-            return '<Tree Search Cutoff: Depth {}>'.format(self.depth)
-
-    IDDFS_threshold = 13
-
-    def __init__(self, problem):
-        self.problem = problem
-
-    # private member
-    def __recursive_search(self, node, limit):
-        if self.problem.goal_test(node.state):
-            return node.solution
-        elif limit == 0:
-            return TreeSearch.Cutoff(limit)
-        else:
-            cutoff_occurred = False
-            for action in self.problem.actions(node.state):
-                child = Node(self.problem, node, action)
-                result = self.__recursive_search(child, limit - 1)
-                if type(result) is TreeSearch.Cutoff:
-                    cutoff_occurred = True
-                elif type(result) is not TreeSearch.Failure:
-                    return result
-            if cutoff_occurred:
-                return TreeSearch.Cutoff(limit)
-            else:
-                return TreeSearch.Failure()
-
-    def depth_limited_search(self, limit):
-        return self.__recursive_search(Node(self.problem), limit)
-
-    def iterative_deepening_search(self):
-        for depth in range(TreeSearch.IDDFS_threshold + 1):
-            print('Depth {}: '.format(depth), end='')
-            result = self.depth_limited_search(depth)
-            if type(result) is not TreeSearch.Cutoff:
-                print('Solution found!')
-                return result
-            else:
-                print('Not found...')
-        print('No solution found within depth {}. Search failure!'.format(TreeSearch.IDDFS_threshold))
-        return TreeSearch.Cutoff(TreeSearch.IDDFS_threshold)
-
-    def __iterative_search(self, strategy):
-        pass
-
