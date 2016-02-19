@@ -1,3 +1,6 @@
+import functools
+
+
 class ProblemFormulation:
 
     def __init__(self, initial_state, goal_state):
@@ -5,7 +8,7 @@ class ProblemFormulation:
         self.goal_state = goal_state
 
     @classmethod
-    def actions(cls, state):
+    def actions_iterator(cls, state):
         raise NotImplementedError
 
     @classmethod
@@ -21,6 +24,9 @@ class ProblemFormulation:
 
 class SearchAgent:
 
+    # The priority queue
+    # Note that it is a abstract class and the priority rule is not defined here.
+    #
     # abstract class
     class PriorityQueue:
 
@@ -40,6 +46,7 @@ class SearchAgent:
         def __len__(self):
             return len(self.__list)
 
+        # The priority rule that are supposed to be implemented before use.
         @classmethod
         def compare(cls, item1, item2):
             raise NotImplementedError
@@ -64,6 +71,7 @@ class SearchAgent:
                     replaced = True
             return replaced
 
+    # The explored set
     class ExploredSet:
 
         def __init__(self, *args):
@@ -84,6 +92,8 @@ class SearchAgent:
 
     class Node:
 
+        # This constructor correspond to ChildNode function in requirements
+        #
         # problem: Problem
         # parent: Node
         # action: Puzzle.Action
@@ -94,9 +104,11 @@ class SearchAgent:
             self.action = action
             self.heuristic = problem.heuristic(self.state)
 
+        # Find solution by recursive traceback
         @property
         def solution(self):
-            solution = [] if self.parent is None else self.parent.solution + [self.action]
+            solution = [] if self.parent is None \
+                else self.parent.solution + [(self.action, self.cost - self.parent.cost)]
             if solution is None:
                 raise Exception('solution is none')
             return solution
@@ -129,6 +141,23 @@ class SearchAgent:
         if not issubclass(type(problem), ProblemFormulation):
             raise TypeError('Subclass of ProblemFormulation expected!')
         self.problem = problem
+        self.solution = None
+
+    def print_solution(self):
+        state = self.problem.initial_state.copy
+        print('Solution:', [step[0] for step in self.solution])
+        print('Total Cost:', functools.reduce(lambda a, b: (None, a[1] + b[1]), self.solution)[1])
+        print()
+        print('Step 0:')
+        print('Action: None')
+        print('Cost: 0')
+        print('State:', state)
+        for i, (action, cost) in enumerate(self.solution):
+            state = self.problem.result(state, action)
+            print('Step {}:'.format(i + 1))
+            print('Action:', action)
+            print('Cost:', cost)
+            print('State:', state)
 
     # private member
     def __recursive_tree_search(self, node, limit):
@@ -138,7 +167,7 @@ class SearchAgent:
             return SearchAgent.Cutoff(limit)
         else:
             cutoff_occurred = False
-            for action in self.problem.actions(node.state):
+            for action in self.problem.actions_iterator(node.state):
                 child = SearchAgent.Node(self.problem, node, action)
                 result = self.__recursive_tree_search(child, limit - 1)
                 if type(result) is SearchAgent.Cutoff:
@@ -164,7 +193,7 @@ class SearchAgent:
             if self.problem.goal_test(node.state):
                 return node.solution
             explored << node
-            for action in self.problem.actions(node.state):
+            for action in self.problem.actions_iterator(node.state):
                 child = SearchAgent.Node(self.problem, node, action)
                 if child not in frontier and child not in explored:
                     frontier << child
@@ -172,23 +201,23 @@ class SearchAgent:
                     frontier.try_replace(child)
 
     def depth_limited_search(self, limit):
-        return self.__recursive_tree_search(SearchAgent.Node(self.problem), limit)
+        self.solution = self.__recursive_tree_search(SearchAgent.Node(self.problem), limit)
 
     def iterative_deepening_search(self):
         for depth in range(SearchAgent.IDDFS_threshold + 1):
             print('Depth {}: '.format(depth), end='')
-            result = self.depth_limited_search(depth)
-            if type(result) is not SearchAgent.Cutoff:
+            self.depth_limited_search(depth)
+            if type(self.solution) is not SearchAgent.Cutoff:
                 print('Solution found!')
-                return result
+                return
             else:
                 print('Not found...')
         print('No solution found within depth {}. Search failure!'.format(SearchAgent.IDDFS_threshold))
-        return SearchAgent.Cutoff(SearchAgent.IDDFS_threshold)
+        self.solution = SearchAgent.Cutoff(SearchAgent.IDDFS_threshold)
 
     def a_star_search(self):
         class AStarPriorityQueue(SearchAgent.PriorityQueue):
             @classmethod
             def compare(cls, item1, item2):
                 return item1 if item1.cost + item1.heuristic < item2.cost + item2.heuristic else item2
-        return self.__iterative_graph_search(AStarPriorityQueue)
+        self.solution = self.__iterative_graph_search(AStarPriorityQueue)

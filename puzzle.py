@@ -36,13 +36,11 @@ class Puzzle:
     down = Action(1, 0)
     left = Action(0, -1)
     right = Action(0, 1)
-    action_set = {up, down, left, right}
+    all_actions = {up, down, left, right}
 
     def __init__(self, *args):
-        if len(args) != 9:
-            raise Exception('9 arguments expected')
-        if len(set(args)) != 9:
-            raise Exception('arguments must be unique')
+        assert len(args) == 9
+        assert len(set(args)) == 9
         self.__list = [0] * 9
         for i, num in enumerate(args):
             if 0 <= num < 9:
@@ -84,9 +82,9 @@ class Puzzle:
         return len(self.history)
 
     @property
-    def actions(self):
+    def available_actions(self):
         actions = set()
-        for action in Puzzle.action_set:
+        for action in Puzzle.all_actions:
             if self.can_move(action):
                 actions.add(action)
         return actions
@@ -119,7 +117,7 @@ class Puzzle:
 
     def shuffle(self, times):
         for _ in range(times):
-            actions = [*self.actions]
+            actions = [*self.available_actions]
             self.move(actions[random.randint(0, len(actions) - 1)])
 
     def undo(self, steps):
@@ -142,15 +140,29 @@ class PuzzleProblem(ProblemFormulation):
 
     # initial_state: Puzzle
     # goal_state: Puzzle
-    def __init__(self, initial_state, goal_state):
+    #
+    # Default goal state is:
+    #
+    #   +---+---+---+
+    #   |   | 1 | 2 |
+    #   +---+---+---+
+    #   | 3 | 4 | 5 |
+    #   +---+---+---+
+    #   | 6 | 7 | 8 |
+    #   +---+---+---+
+    #
+    def __init__(self, initial_state, goal_state=Puzzle(0, 1, 2, 3, 4, 5, 6, 7, 8)):
         super(PuzzleProblem, self).__init__(initial_state, goal_state)
         self.initial_state = initial_state.clean_copy
         self.goal_state = goal_state.clean_copy
 
     # state: Puzzle
     @classmethod
-    def actions(cls, state):
-        return state.actions
+    def actions_iterator(cls, state):
+        iter_order = [Puzzle.up, Puzzle.down, Puzzle.left, Puzzle.right]
+        for action in iter_order:
+            if action in state.available_actions:
+                yield action
 
     # state: Puzzle
     # action: Puzzle.Action
