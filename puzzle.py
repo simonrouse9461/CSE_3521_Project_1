@@ -2,8 +2,10 @@ import random
 from search_agent import ProblemFormulation
 
 
+# This class is a representation of the puzzle game
 class Puzzle:
 
+    # This class defines the structure for a game action
     class Action:
 
         def __init__(self, row, col):
@@ -32,6 +34,7 @@ class Puzzle:
         def cost(self):
             return 1
 
+    # Static variables that specify all possible actions can be taken by a player
     up = Action(-1, 0)
     down = Action(1, 0)
     left = Action(0, -1)
@@ -136,6 +139,7 @@ class Puzzle:
         return dist
 
 
+# This class is the problem formulation for the Puzzle game that provides information for a search_agent
 class PuzzleProblem(ProblemFormulation):
 
     # initial_state: Puzzle
